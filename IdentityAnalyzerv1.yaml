@@ -1,0 +1,362 @@
+name: Identity Analyzer v1
+timeSelector: {}
+sharedTimeInterval:
+  enabled: false
+  isLive: false
+  start: 1d
+widgets:
+  eef84996-f50a-491c-ae8a-e95fc4a7f18a:
+    x: 0
+    y: 14
+    height: 5
+    queryString: |
+      CloudService="IAM"
+      // Translate numerical severity to the severity name
+      | case {
+            policy_severity = 0 | Severity := "Critical"
+          ; policy_severity = 1 | Severity := "High"
+          ; policy_severity = 2 | Severity := "Medium"
+          ; policy_severity = 3 | Severity := "Informational"
+          ; *                   | Severity := format("Unknown (%s)", field=policy_severity)
+      }
+      | groupBy(
+          [policy_id, Severity, Provider, cloud_service_friendly, policy_statement, policy_description]
+      )
+      | sort(policy_severity, limit=10)
+    end: now
+    start: 7d
+    width: 5
+    options:
+      cell-overflow: wrap-text
+      configured-columns: {}
+      row-numbers-enabled: false
+    visualization: table-view
+    title: Top 10 configuration assessment by policy for identity
+    isLive: false
+    type: query
+  b0134f15-c121-484e-81a2-ebf534ad8e06:
+    x: 5
+    y: 14
+    height: 5
+    queryString: |
+      CloudService="IAM"
+      // Translate numerical severity to the severity name
+      | case {
+            policy_severity = 0 | Severity := "Critical"
+          ; policy_severity = 1 | Severity := "High"
+          ; policy_severity = 2 | Severity := "Medium"
+          ; policy_severity = 3 | Severity := "Informational"
+          ; *                   | Severity := format("Unknown (%s)", field=policy_severity)
+      }
+      | groupBy(
+          [policy_id, Severity, Provider, cloud_service_friendly, policy_statement, policy_description]
+      )
+      | sort(policy_severity, limit=10)
+    end: now
+    start: 7d
+    width: 7
+    options:
+      cell-overflow: wrap-text
+      configured-columns: {}
+      row-numbers-enabled: false
+    visualization: table-view
+    title: 'Top 10 configuration assessment by policy for identity #2'
+    isLive: false
+    type: query
+  9ac4c672-cd20-49b8-addb-c247fc1953a7:
+    x: 4
+    y: 0
+    height: 4
+    queryString: |-
+      | #repo=base_sensor "event-type" = "cspm_policy_*" vertex_type=ioa
+
+      // Translate numerical severity to the severity name
+      | case {
+            policy_severity = 0 | Severity := "Critical"
+          ; policy_severity = 1 | Severity := "High"
+          ; policy_severity = 2 | Severity := "Medium"
+          ; policy_severity = 3 | Severity := "Informational"
+          ; *                   | Severity := format("Unknown (%s)", field=policy_severity)
+      }
+      | service = Identity
+      // Format cloud_provider
+      | case {
+            cloud_provider = "aws"   | Provider := "AWS"
+          ; cloud_provider = "azure" | Provider := "Azure"
+          ; cloud_provider = "gcp"   | Provider := "GCP"
+          ; *                        | Provider := upper(cloud_provider)
+      }
+
+      | "Attack types" := concatArray("attack_types", separator="\n")
+      | "Tactic and technique" := format("%s via %s", field=[mitre_attack_tactic, mitre_attack_technique])
+
+      | groupBy(
+          [policy_id, Severity, Provider, cloud_service_friendly, policy_statement, policy_description, "Tactic and technique", "Attack types"]
+          , limit=max
+          , function=[
+              count(@timestamp, distinct=true, as=Detections)
+              , { max(@timestamp, as="Last detection") | "Last detection" := formatTime("%F %T %Z", field="Last detection")}
+          ]
+      )
+      | "Attack types" = Execution
+    end: now
+    start: 7d
+    width: 4
+    options:
+      cell-overflow: wrap-text
+      configured-columns: {}
+      row-numbers-enabled: false
+    visualization: table-view
+    title: Execution IOAs
+    isLive: false
+    type: query
+  44080367-9774-4c3b-a187-6d0c08e0a795:
+    x: 0
+    y: 10
+    height: 4
+    queryString: |-
+      CloudService="IAM" | in(field="policy_id", values=["576", "1", "466", "1006", "12", "15", "16", "18", "13", "17", "450", "577", "451", "8"])
+      | groupBy([PolicyStatement])
+    end: now
+    start: 7d
+    width: 4
+    options:
+      cell-overflow: wrap-text
+      configured-columns: {}
+      row-numbers-enabled: false
+    visualization: table-view
+    title: Credential Policy Violation IOMs
+    isLive: false
+    type: query
+  db38bb3f-5623-4248-b481-069cd39ba90f:
+    x: 8
+    y: 10
+    height: 4
+    queryString: |-
+      CloudService="IAM" | in(field="policy_id", values=["5", "612", "401", "461", "7", "611", "444", "190", "203", "6", "563", "610"])
+      | groupBy(["policy_statement"])
+    end: now
+    start: 7d
+    width: 4
+    options:
+      cell-overflow: wrap-text
+      configured-columns: {}
+      row-numbers-enabled: false
+    visualization: table-view
+    title: Least Privilege IOMs (last 7 days)
+    isLive: false
+    type: query
+  688e45d4-b26a-4a6f-8880-6bce30e7e958:
+    x: 0
+    y: 0
+    height: 4
+    queryString: |-
+      | #repo=base_sensor "event-type" = "cspm_policy_*" vertex_type=ioa
+
+      // Translate numerical severity to the severity name
+      | case {
+            policy_severity = 0 | Severity := "Critical"
+          ; policy_severity = 1 | Severity := "High"
+          ; policy_severity = 2 | Severity := "Medium"
+          ; policy_severity = 3 | Severity := "Informational"
+          ; *                   | Severity := format("Unknown (%s)", field=policy_severity)
+      }
+      | service = Identity
+      // Format cloud_provider
+      | case {
+            cloud_provider = "aws"   | Provider := "AWS"
+          ; cloud_provider = "azure" | Provider := "Azure"
+          ; cloud_provider = "gcp"   | Provider := "GCP"
+          ; *                        | Provider := upper(cloud_provider)
+      }
+
+      | "Attack types" := concatArray("attack_types", separator="\n")
+      | "Tactic and technique" := format("%s via %s", field=[mitre_attack_tactic, mitre_attack_technique])
+
+      | groupBy(
+          [policy_id, Severity, Provider, cloud_service_friendly, policy_statement, policy_description, "Tactic and technique", "Attack types"]
+          , limit=max
+          , function=[
+              count(@timestamp, distinct=true, as=Detections)
+              , { max(@timestamp, as="Last detection") | "Last detection" := formatTime("%F %T %Z", field="Last detection")}
+          ]
+      )
+      | "Attack types" = "Data Exfiltration"
+    end: now
+    start: 7d
+    width: 4
+    options:
+      cell-overflow: wrap-text
+      configured-columns: {}
+      row-numbers-enabled: false
+    visualization: table-view
+    title: Data Exfiltration IOAs
+    isLive: false
+    type: query
+  ea607dec-437a-4da9-97ca-fafdf93d582f:
+    x: 4
+    y: 10
+    height: 4
+    queryString: |-
+      CloudService="IAM" | in(field="policy_id", values=["188", "10", "189", "602", "187", "539"])
+      | groupBy([PolicyStatement])
+      | #type != "KGHOST_Gametime"
+    end: now
+    start: 7d
+    width: 4
+    options:
+      cell-overflow: wrap-text
+      configured-columns: {}
+      row-numbers-enabled: false
+    visualization: table-view
+    title: MFA Policy Violation (last 7 days)
+    isLive: false
+    type: query
+  8c6a8850-e22e-4693-808d-8a566298ccdf:
+    x: 8
+    y: 0
+    height: 4
+    queryString: |-
+      | #repo=base_sensor "event-type" = "cspm_policy_*" vertex_type=ioa
+
+      // Translate numerical severity to the severity name
+      | case {
+            policy_severity = 0 | Severity := "Critical"
+          ; policy_severity = 1 | Severity := "High"
+          ; policy_severity = 2 | Severity := "Medium"
+
+          ; *                   | Severity := format("Unknown (%s)", field=policy_severity)
+      }
+      | service = Identity
+      // Format cloud_provider
+      | case {
+            cloud_provider = "aws"   | Provider := "AWS"
+          ; cloud_provider = "azure" | Provider := "Azure"
+          ; cloud_provider = "gcp"   | Provider := "GCP"
+          ; *                        | Provider := upper(cloud_provider)
+      }
+
+      | "Attack types" := concatArray("attack_types", separator="\n")
+      | "Tactic and technique" := format("%s via %s", field=[mitre_attack_tactic, mitre_attack_technique])
+
+      | groupBy(
+          [policy_id, Severity, Provider, cloud_service_friendly, policy_statement, policy_description, "Tactic and technique", "Attack types"]
+          , limit=max
+          , function=[
+              count(@timestamp, distinct=true, as=Detections)
+              , { max(@timestamp, as="Last detection") | "Last detection" := formatTime("%F %T %Z", field="Last detection")}
+          ]
+      )
+      | "Attack types" = "Persistence\nPrivilege Escalation"
+    end: now
+    start: 7d
+    width: 4
+    options:
+      cell-overflow: wrap-text
+      configured-columns: {}
+      row-numbers-enabled: false
+    visualization: table-view
+    title: Priv Escalation and Persistence IOAs
+    isLive: false
+    type: query
+  b4089371-e690-4a12-9366-f0b01f309d41:
+    x: 0
+    y: 4
+    height: 6
+    queryString: |-
+      | #repo=base_sensor "event-type" = "cspm_policy_*" vertex_type=ioa
+      // Translate numerical severity to the severity name
+      | case {
+            policy_severity = 0 | Severity := "Critical"
+          ; policy_severity = 1 | Severity := "High"
+          ; policy_severity = 2 | Severity := "Medium"
+          ; policy_severity = 3 | Severity := "Informational"
+          ; *                   | Severity := format("Unknown (%s)", field=policy_severity)
+      }
+
+      // Format cloud_provider
+      | case {
+            cloud_provider = "aws"   | Provider := "AWS"
+          ; cloud_provider = "azure" | Provider := "Azure"
+          ; cloud_provider = "gcp"   | Provider := "GCP"
+          ; *                        | Provider := upper(cloud_provider)
+      }
+      | "Attack types" := concatArray("attack_types", separator="\n")
+      | "Tactic and technique" := format("%s via %s", field=[mitre_attack_tactic, mitre_attack_technique])
+      | rename([
+            [ "cloud_service_friendly" , "Service"     ]
+          , [ "policy_statement"       , "Policy"      ]
+          , [ "policy_description"     , "Description" ]
+      ])
+      | Service = "Identity"
+      | timechart("Attack types")
+    end: now
+    start: 30d
+    width: 4
+    options:
+      connect-points: false
+      imputation: none
+    visualization: time-chart
+    title: Trend by Attack Type
+    isLive: false
+    type: query
+  1d70f5c9-59eb-411a-9d32-cff3270eebc6:
+    x: 4
+    y: 4
+    height: 6
+    queryString: |-
+      | #repo=base_sensor "event-type" = "cspm_policy_*" vertex_type=ioa
+      // Translate numerical severity to the severity name
+      | case {
+            policy_severity = 0 | Severity := "Critical"
+          ; policy_severity = 1 | Severity := "High"
+          ; policy_severity = 2 | Severity := "Medium"
+          ; policy_severity = 3 | Severity := "Informational"
+          ; *                   | Severity := format("Unknown (%s)", field=policy_severity)
+      }
+
+      // Format cloud_provider
+      | case {
+            cloud_provider = "aws"   | Provider := "AWS"
+          ; cloud_provider = "azure" | Provider := "Azure"
+          ; cloud_provider = "gcp"   | Provider := "GCP"
+          ; *                        | Provider := upper(cloud_provider)
+      }
+      | "Attack types" := concatArray("attack_types", separator="\n")
+      | "Tactic and technique" := format("%s via %s", field=[mitre_attack_tactic, mitre_attack_technique])
+
+      | rename([
+            [ "cloud_service_friendly" , "Service"     ]
+          , [ "policy_statement"       , "Policy"      ]
+          , [ "policy_description"     , "Description" ]
+      ])
+      | Service = "Identity"
+      | Policy != "Certificate added to an application registration"
+    end: now
+    start: 30d
+    width: 8
+    options:
+      columns:
+      - fieldName: Severity
+        format: text
+        type: field
+        width: 130
+      - fieldName: Policy
+        format: text
+        type: field
+        width: 392
+      - fieldName: identity
+        format: text
+        type: field
+        width: 205
+      - fieldName: '@timestamp'
+        format: datetime
+        type: field
+        width: 200
+      newestAtBottom: true
+      showOnlyFirstLine: false
+    visualization: list-view
+    title: Most recent identity behavior policy violation
+    isLive: false
+    type: query
+$schema: https://schemas.humio.com/dashboard/v0.20.0
