@@ -15,7 +15,7 @@
 - Customize metrics as needed
 
 ## Reference Documents
-- NG-SIEM Dashboards Reference: https://falcon.crowdstrike.com/documentation/page/ic5d7b7d/event-search-advanced#r48010d4
+- [NG-SIEM Dashboards Reference](https://falcon.crowdstrike.com/documentation/page/ic5d7b7d/event-search-advanced#r48010d4)
 - Supported CrowdStrike [Query Language functions](https://library.humio.com/index.html?redirected=true)
 
 ## Disclaimer
