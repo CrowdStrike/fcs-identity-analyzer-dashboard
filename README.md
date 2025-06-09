@@ -25,4 +25,4 @@ This dashboard template is:
 - Provided as a temporary solution during Identity Analyzer deprecation
 
 ## License
-MIT, see [LICENSE] (License.md)
+MIT, see [LICENSE] (LICENSE)
